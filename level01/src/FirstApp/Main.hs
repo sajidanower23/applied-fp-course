@@ -32,7 +32,6 @@ app
   -> (Response -> IO ResponseReceived)
   -> IO ResponseReceived
 app _ cb = cb $ responseLBS status200 [] "Hello internet"
-  -- error "Application not implemented"
 
 -- We keep this main function here as it is useful to build your application as
 -- a library. The reasoning behind this is that when you come to do your
