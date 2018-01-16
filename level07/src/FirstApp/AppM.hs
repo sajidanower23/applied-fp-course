@@ -6,13 +6,16 @@ import           Control.Monad.Except   (ExceptT, MonadError, runExceptT,
 import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader   (MonadReader, ReaderT, runReaderT)
 
-import           FirstApp.Conf          (Conf)
+import           Data.Text              (Text)
+
 import           FirstApp.DB.Types      (FirstAppDB)
 import           FirstApp.Error         (Error)
+import           FirstApp.Types         (Conf)
 
 data Env = Env
-  { envConfig :: Conf
-  , envDb     :: FirstAppDB
+  { envLoggingFn :: Text -> AppM ()
+  , envConfig    :: Conf
+  , envDB        :: FirstAppDB
   }
 
 -- We're going to add a very nice piece to our application, in the form of
@@ -104,7 +107,7 @@ newtype AppM a = AppM
            , MonadError Error
            )
 
--- Now that we've two transformers in out 'stack', we have to 'run' them in order
+-- Now that we've two transformers in our 'stack', we have to 'run' them in order
 -- to effect the computations and produce our result in our base monad. When
 -- you're running monad transformers you have to unpack them in order. Since our outer
 -- transformer is a ReaderT, we have to run that first. Followed by running

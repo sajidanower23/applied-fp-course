@@ -2,7 +2,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
 module FirstApp.Main (runApp) where
 
-import           Network.Wai              -- (Application, Request, responseLBS, Response, ResponseReceived)
+import           Network.Wai              (Application, Request, Response,
+                                           ResponseReceived, responseLBS)
 import           Network.Wai.Handler.Warp (run)
 
 import           Network.HTTP.Types       (status200)
