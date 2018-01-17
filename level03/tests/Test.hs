@@ -39,10 +39,35 @@ main = do
       -- Write some more tests, below are some ideas to get you started:
 
       -- Don't worry if you don't get all of these done. :)
-
-      -- 1) The '<topic>/add' route will respond with an error when given an empty comment
-      -- 2) The '<topic>/view' route will respond correctly when given a topic
-      -- 3) The '<topic>/view' route will respond with an error when given an empty topic
-      -- 4) A gibberish route will return a 404
+      describe "Add Route" $ do
+        it "Correct POST request" $ do
+          post "/puppies/add" "puppies are awesome"
+            `shouldRespondWith`
+              "Hello there!"
+        it "No Topic" $ do
+          post "//add" "puppies are awesome"
+            `shouldRespondWith`
+              "Empty Topic" {matchStatus = 400}
+        it "No Comment" $ do
+          post "/p/add" ""
+            `shouldRespondWith`
+              "Empty Comment" {matchStatus = 400}
+        it "No Topic or Comment" $ do
+          post "//add" ""
+            `shouldRespondWith`
+              "Empty Topic"  {matchStatus = 400}
+      describe "View Route" $ do
+        it "Incorrect route" $ do
+          get "/view"
+            `shouldRespondWith`
+              "Unknown Route" {matchStatus = 404}
+        it "Proper GET request" $ do
+          get "/puppies/view"
+            `shouldRespondWith`
+              "View Request not implemented" {matchStatus = 200}
+        it "No topic" $ do
+          get "//view"
+            `shouldRespondWith`
+              "Empty Topic" {matchStatus = 400}
       -- 5) The '<topic>/add' route will respond with the message from the config (the `mkMessage` function from FirstApp.Conf will help)
 
