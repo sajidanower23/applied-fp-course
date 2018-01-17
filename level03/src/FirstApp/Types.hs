@@ -37,8 +37,7 @@ mkCommentText =
   nonEmptyText CommentText EmptyCommentText
 
 getCommentText :: CommentText -> Text
-getCommentText (CommentText t) =
-  t
+getCommentText (CommentText t) = t
 
 data RqType
   = AddRq Topic CommentText

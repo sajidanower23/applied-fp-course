@@ -69,5 +69,3 @@ main = do
           get "//view"
             `shouldRespondWith`
               "Empty Topic" {matchStatus = 400}
-      -- 5) The '<topic>/add' route will respond with the message from the config (the `mkMessage` function from FirstApp.Conf will help)
-
