@@ -38,7 +38,7 @@ data RqType = AddRq Topic CommentText
 -- useful to be able to be descriptive about what went wrong.
 
 -- Fill in the error constructors as you need them.
-data Error = EmptyTopic | EmptyComment
+data Error = EmptyTopic | EmptyComment | UnknownRoute
 
 -- Provide the constructors for a sum type to specify the `ContentType` Header,
 -- to be used when we build our Response type.
@@ -48,8 +48,8 @@ data ContentType = PlainText | JSON
 -- information, so write a function that will take our ``ContentType`` and
 -- produce the correct value for the header.
 renderContentType :: ContentType -> ByteString
-renderContentType =
-  error "renderContentType not implemented"
+renderContentType PlainText = "text/plain;"
+renderContentType JSON = "application/json;"
 
 -- In Haskell the ``newtype`` is a wrapper of sorts that comes with zero runtime
 -- cost. It is purely used for type-checking. So when you have a bare primitive

@@ -28,10 +28,7 @@ import           Network.HTTP.Types       (status200)
 -- what you need.
 --
 -- We've used the non-synonym version of the `Application` type below.
-app
-  :: Request
-  -> (Response -> IO ResponseReceived)
-  -> IO ResponseReceived
+app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 app _ cb = cb $ responseLBS status200 [] "Hello internet"
 
 -- We keep this main function here as it is useful to build your application as
