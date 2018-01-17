@@ -21,35 +21,22 @@ newtype Topic = Topic Text
 newtype CommentText = CommentText Text
   deriving Show
 
-nonEmptyText
-  :: (Text -> a)
-  -> Error
-  -> Text
-  -> Either Error a
+nonEmptyText :: (Text -> a) -> Error -> Text -> Either Error a
 nonEmptyText _ e "" = Left e
 nonEmptyText c _ tx = Right (c tx)
 
-mkTopic
-  :: Text
-  -> Either Error Topic
+mkTopic :: Text -> Either Error Topic
 mkTopic =
   nonEmptyText Topic EmptyTopic
 
-getTopic
-  :: Topic
-  -> Text
-getTopic (Topic t) =
-  t
+getTopic :: Topic -> Text
+getTopic (Topic t) = t
 
-mkCommentText
-  :: Text
-  -> Either Error CommentText
+mkCommentText :: Text -> Either Error CommentText
 mkCommentText =
   nonEmptyText CommentText EmptyCommentText
 
-getCommentText
-  :: CommentText
-  -> Text
+getCommentText :: CommentText -> Text
 getCommentText (CommentText t) =
   t
 
