@@ -73,7 +73,7 @@ mkRequest req =
   case (pathInfo req, requestMethod req) of
     ([t, "add"], "POST") -> mkAddRequest t <$> (strictRequestBody req)
     ([t, "view"], "GET") -> return $ mkViewRequest t
-    (["view"], "GET")    -> return $ mkListRequest
+    (["list"], "GET")    -> return $ mkListRequest
     _                    -> return $ Left UnknownRoute
 
 -- If we find that we need more information to handle a request, or we have a
