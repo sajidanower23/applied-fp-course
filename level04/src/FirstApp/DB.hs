@@ -20,7 +20,7 @@ import qualified Database.SQLite.Simple             as Sql
 
 import qualified Database.SQLite.SimpleErrors       as Sql
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
-
+import           Data.Bifunctor
 import           FirstApp.Types                     (Comment, CommentText,
                                                      Error(..), Topic, getTopic,
                                                      getCommentText, mkTopic,
@@ -76,34 +76,37 @@ getComments (FirstAppDB c) t =
   -- cannot be converted to a Comment, or simply ignoring any DbComment that is
   -- not valid.
   in do
-    cmtList <- Sql.execute c sql (Sql.Only $ getTopic t)
-    case partitionEithers $ fromDbComment <$> cmtList of
-      ([], rCmtList) -> pure $ Right rCmtList
-      (errList, _) -> pure $ Left DBError
+    cmtList <- Sql.query c sql (Sql.Only $ getTopic t)
+    case partitionEithers (fromDbComment <$> cmtList) of
+      ([], rCmts) -> pure $ Right rCmts
+      _           -> pure $ Left DBError
+    -- pure $ traverse fromDbComment =<< cmtList
 
 addCommentToTopic :: FirstAppDB -> Topic -> CommentText -> IO (Either Error ())
-addCommentToTopic =
+addCommentToTopic (FirstAppDB c) t cmt =
   let
     sql = "INSERT INTO comments (topic,comment,time) VALUES (?,?,?)"
-  in
-    error "addCommentToTopic not implemented"
+  in do
+    time <- getCurrentTime
+    first (const DBError)
+      <$>
+        Sql.runDBAction (Sql.execute c sql (getTopic t, getCommentText cmt, time))
 
-
-getTopics
-  :: FirstAppDB
-  -> IO (Either Error [Topic])
-getTopics =
+getTopics :: FirstAppDB -> IO (Either Error [Topic])
+getTopics (FirstAppDB c) =
   let
     sql = "SELECT DISTINCT topic FROM comments"
-  in
-    error "getTopics not implemented"
+  in  do
+    topicEithers <- Sql.query_ c sql
+    case partitionEithers (mkTopic . Sql.fromOnly <$> topicEithers) of
+      ([], rTopics) -> pure $ Right rTopics
+      _             -> pure $ Left DBError
 
-deleteTopic
-  :: FirstAppDB
-  -> Topic
-  -> IO (Either Error ())
-deleteTopic =
+deleteTopic :: FirstAppDB -> Topic -> IO (Either Error ())
+deleteTopic (FirstAppDB c) t =
   let
     sql = "DELETE FROM comments WHERE topic = ?"
-  in
-    error "deleteTopic not implemented"
+  in do
+    first (const DBError)
+      <$>
+        Sql.runDBAction (Sql.execute c sql (Sql.Only (getTopic t)))

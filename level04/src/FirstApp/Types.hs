@@ -16,8 +16,8 @@ module FirstApp.Types
   , renderContentType
   , fromDbComment
   ) where
-
-import           GHC.Generics      (Generic)
+import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
+import           GHC.Generics      (Generic)  
 
 import           Data.ByteString   (ByteString)
 import           Data.Text         (Text)
