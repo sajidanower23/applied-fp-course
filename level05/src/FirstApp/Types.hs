@@ -191,16 +191,17 @@ newtype DBFilePath = DBFilePath
 -- - A customisable port number: ``Port``
 -- - A filepath for our SQLite database: ``DBFilePath``
 data Conf = Conf
+              {
+                portNum :: Port,
+                dbPath :: DBFilePath
+              }
 
 -- We're storing our Port as a Word16 to be more precise and prevent invalid
 -- values from being used in our application. However Wai is not so stringent.
 -- To accommodate this and make our lives a bit easier, we will write this
 -- helper function to take ``Conf`` value and convert it to an ``Int``.
-confPortToWai
-  :: Conf
-  -> Int
-confPortToWai =
-  error "portToInt not implemented"
+confPortToWai :: Conf -> Int
+confPortToWai = fromIntegral . getPort . portNum
 
 -- Similar to when we were considering our application types, leave this empty
 -- for now and add to it as you go.
@@ -244,6 +245,14 @@ instance Monoid PartialConf where
   mempty = PartialConf mempty mempty
 
   mappend _a _b = PartialConf
-    { pcPort       = error "pcPort mappend not implemented"
-    , pcDBFilePath = error "pcDBFilePath mappend not implemented"
+    { pcPort       =
+        let pA = pcPort _a
+            pB = pcPort _b
+            in
+              mappend pA pB
+    , pcDBFilePath =
+        let fA = pcDBFilePath _a
+            fB = pcDBFilePath _b
+            in
+              mappend pA pB
     }
