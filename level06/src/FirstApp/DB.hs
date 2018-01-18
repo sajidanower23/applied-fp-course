@@ -35,19 +35,17 @@ import           FirstApp.Types                     (FirstAppDB (FirstAppDB, dbC
                                                      mkTopic)
 
 -- Quick helper to pull the connection and close it down.
-closeDB
-  :: FirstAppDB
-  -> IO ()
+closeDB :: FirstAppDB
+        -> IO ()
 closeDB =
   Sql.close . dbConn
 
-initDB
-  :: DBFilePath
-  -> IO ( Either SQLiteResponse FirstAppDB )
+initDB :: DBFilePath
+       -> IO ( Either SQLiteResponse FirstAppDB )
 initDB fp = Sql.runDBAction $ do
   -- Initialise the connection to the DB...
   -- - What could go wrong here?
-  -- - What haven't we be told in the types?
+  -- - What haven't we been told in the types?
   con <- Sql.open ( getDBFilePath fp )
   -- Initialise our one table, if it's not there already
   _ <- Sql.execute_ con createTableQ
@@ -59,38 +57,31 @@ initDB fp = Sql.runDBAction $ do
     createTableQ =
       "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, topic TEXT, comment TEXT, time INTEGER)"
 
-getDBConn
-  :: AppM Connection
-getDBConn =
-  error "getDBConn not implemented"
+getDBConn :: AppM Connection
+getDBConn = error "getDBConn not implemented"
 
-runDB
-  :: (a -> Either Error b)
-  -> (Connection -> IO a)
-  -> AppM (Either Error b)
+runDB :: (a -> Either Error b)
+      -> (Connection -> IO a)
+      -> AppM (Either Error b)
 runDB =
   error "runDB not re-implemented"
 
-getComments
-  :: Topic
-  -> AppM (Either Error [Comment])
+getComments :: Topic
+            -> AppM (Either Error [Comment])
 getComments =
   error "Copy your completed 'getComments' and refactor to match the new type signature"
 
-addCommentToTopic
-  :: Topic
-  -> CommentText
-  -> AppM (Either Error ())
+addCommentToTopic :: Topic
+                  -> CommentText
+                  -> AppM (Either Error ())
 addCommentToTopic =
   error "Copy your completed 'appCommentToTopic' and refactor to match the new type signature"
 
-getTopics
-  :: AppM (Either Error [Topic])
+getTopics :: AppM (Either Error [Topic])
 getTopics =
   error "Copy your completed 'getTopics' and refactor to match the new type signature"
 
-deleteTopic
-  :: Topic
-  -> AppM (Either Error ())
+deleteTopic :: Topic
+            -> AppM (Either Error ())
 deleteTopic =
   error "Copy your completed 'deleteTopic' and refactor to match the new type signature"
