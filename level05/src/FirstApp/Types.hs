@@ -205,7 +205,7 @@ confPortToWai = fromIntegral . getPort . portNum
 
 -- Similar to when we were considering our application types, leave this empty
 -- for now and add to it as you go.
-data ConfigError = ConfigError
+data ConfigError = NoFileError | DecodeError
   deriving Show
 
 -- Our application will be able to load configuration from both a file and
@@ -254,5 +254,5 @@ instance Monoid PartialConf where
         let fA = pcDBFilePath _a
             fB = pcDBFilePath _b
             in
-              mappend pA pB
+              mappend fA fB
     }

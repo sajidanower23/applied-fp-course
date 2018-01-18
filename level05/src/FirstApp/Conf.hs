@@ -7,11 +7,12 @@ module FirstApp.Conf
 import           GHC.Word                  (Word16)
 
 import           Data.Bifunctor            (first)
-import           Data.Monoid               ((<>))
+import           Data.Monoid               ((<>), Last(..))
 
 import           FirstApp.Types            (Conf, ConfigError,
                                             DBFilePath (DBFilePath),
-                                            PartialConf, Port (Port))
+                                            PartialConf(..), Port (Port)
+                                            , DBFilePath(..))
 
 import           FirstApp.Conf.CommandLine (commandLineParser)
 import           FirstApp.Conf.File        (parseJSONConfigFile)
@@ -19,17 +20,14 @@ import           FirstApp.Conf.File        (parseJSONConfigFile)
 -- For the purposes of this application we will encode some default values to
 -- ensure that our application continues to function in the event of missing
 -- configuration values from either the file or command line inputs.
-defaultConf
-  :: PartialConf
-defaultConf =
-  error "defaultConf not implemented"
+defaultConf :: PartialConf
+defaultConf = PartialConf (Last $ Just $ Port 8000)
+                          (Last $ Just $ DBFilePath "app_db.db")
 
 -- We need something that will take our PartialConf and see if can finally build
 -- a complete ``Conf`` record. Also we need to highlight any missing values by
 -- providing the relevant error.
-makeConfig
-  :: PartialConf
-  -> Either ConfigError Conf
+makeConfig :: PartialConf -> Either ConfigError Conf
 makeConfig =
   error "makeConfig not implemented"
 
