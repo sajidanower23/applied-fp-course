@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy               as LBS
 
 import           Data.Either                        (either)
 import           Data.Monoid                        ((<>))
-
+import           Data.Bifunctor                     (first)
 import           Data.Text                          (Text)
 import           Data.Text.Encoding                 (decodeUtf8)
 
@@ -31,8 +31,9 @@ import qualified Data.Aeson                         as A
 
 import qualified FirstApp.Conf                      as Conf
 import qualified FirstApp.DB                        as DB
-import           FirstApp.Types                     (Conf, ContentType (..),
-                                                     Error (..),
+import           FirstApp.Types                     (Conf(..), ContentType (..),
+                                                     Error (..), DBFilePath(..),
+                                                     ConfigError(..),
                                                      RqType (AddRq, ListRq, ViewRq),
                                                      mkCommentText, mkTopic,
                                                      renderContentType)
@@ -42,6 +43,7 @@ import           FirstApp.Types                     (Conf, ContentType (..),
 -- single type so that we can deal with the entire start-up process as a whole.
 data StartUpError
   = DbInitErr SQLiteResponse
+  | ConfError ConfigError
   deriving Show
 
 runApp :: IO ()
@@ -61,17 +63,21 @@ runApp = do
 --
 -- The filename for our application config is: "appconfig.json"
 --
-prepareAppReqs
-  :: IO ( Either StartUpError ( Conf, DB.FirstAppDB ) )
-prepareAppReqs =
-  error "copy your prepareAppReqs from the previous level."
+prepareAppReqs :: IO ( Either StartUpError ( Conf, DB.FirstAppDB ) )
+prepareAppReqs = do
+  opts <- Conf.parseOptions "appconfig.json"
+  case opts of
+    Left e1 -> pure $ Left $ ConfError e1
+    Right conf -> do
+      dbAppE <- first DbInitErr <$> DB.initDB (getDBFilePath . dbPath $ conf)
+      case dbAppE of
+        Left e1 -> pure $ Left e1
+        Right dbApp -> pure $ Right $ (conf, dbApp)
+
+  -- error "copy your prepareAppReqs from the previous level."
 
 -- | Some helper functions to make our lives a little more DRY.
-mkResponse
-  :: Status
-  -> ContentType
-  -> LBS.ByteString
-  -> Response
+mkResponse :: Status -> ContentType -> LBS.ByteString -> Response
 mkResponse sts ct =
   responseLBS sts [(hContentType, renderContentType ct)]
 

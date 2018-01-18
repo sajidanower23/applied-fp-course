@@ -9,7 +9,7 @@ import           GHC.Word                  (Word16)
 import           Data.Bifunctor            (first)
 import           Data.Monoid               ((<>), Last(..))
 
-import           FirstApp.Types            (Conf, ConfigError,
+import           FirstApp.Types            (Conf(..), ConfigError(..),
                                             DBFilePath (DBFilePath),
                                             PartialConf(..), Port (Port)
                                             , DBFilePath(..))
@@ -28,8 +28,9 @@ defaultConf = PartialConf (Last $ Just $ Port 8000)
 -- a complete ``Conf`` record. Also we need to highlight any missing values by
 -- providing the relevant error.
 makeConfig :: PartialConf -> Either ConfigError Conf
-makeConfig =
-  error "makeConfig not implemented"
+makeConfig (PartialConf (Last (Just p)) (Last (Just d))) = Right $ Conf p d
+makeConfig (PartialConf (Last Nothing) _) = Left MissingPort
+makeConfig (PartialConf _ (Last Nothing)) = Left MissingFilePath
 
 -- This is the function we'll actually export for building our configuration.
 -- Since it wraps all our efforts to read information from the command line, and
@@ -41,12 +42,16 @@ makeConfig =
 --
 -- ``defaults <> file <> commandLine``
 --
-parseOptions
-  :: FilePath
-  -> IO (Either ConfigError Conf)
-parseOptions =
+parseOptions :: FilePath -> IO (Either ConfigError Conf)
+parseOptions fp = do
   -- Parse the options from the config file: "appconfig.json"
+  fileConfE <- parseJSONConfigFile fp
+  case fileConfE of
+    Left e1 -> pure $ Left e1
+    Right fileConf -> do
   -- Parse the options from the commandline using 'commandLineParser'
+      cmdConf <- commandLineParser
+      let combinedConf = mappend fileConf cmdConf
+      pure $ makeConfig combinedConf
   -- Combine these with the default configuration 'defaultConf'
   -- Return the final configuration value
-  error "parseOptions not implemented"

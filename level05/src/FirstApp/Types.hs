@@ -205,7 +205,11 @@ confPortToWai = fromIntegral . getPort . portNum
 
 -- Similar to when we were considering our application types, leave this empty
 -- for now and add to it as you go.
-data ConfigError = NoFileError | DecodeError
+data ConfigError
+  = NoFileError
+  | DecodeError
+  | MissingPort
+  | MissingFilePath
   deriving Show
 
 -- Our application will be able to load configuration from both a file and
