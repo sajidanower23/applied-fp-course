@@ -36,7 +36,8 @@ import           FirstApp.Types                     (Conf(..), ContentType (..),
                                                      ConfigError(..),
                                                      RqType (AddRq, ListRq, ViewRq),
                                                      mkCommentText, mkTopic,
-                                                     renderContentType)
+                                                     renderContentType,
+                                                     confPortToWai)
 
 -- Our start-up is becoming more complicated and could fail in new and
 -- interesting ways. But we also want to be able to capture these errors in a
@@ -48,12 +49,11 @@ data StartUpError
 
 runApp :: IO ()
 runApp = do
-  -- Load up the configuration by providing a ``FilePath`` for the JSON config file.
-  cfgE <- error "configuration not implemented"
+  cfgAppE <- prepareAppReqs
   -- Loading the configuration can fail, so we have to take that into account now.
-  case cfgE of
-    Left err   -> undefined
-    Right _cfg -> run undefined undefined
+  case cfgAppE of
+    Left err   -> print err
+    Right (conf, dbApp) -> run (confPortToWai conf) (app conf dbApp)
 
 -- We need to complete the following steps to prepare our app requirements:
 --
@@ -73,8 +73,6 @@ prepareAppReqs = do
       case dbAppE of
         Left e1 -> pure $ Left e1
         Right dbApp -> pure $ Right $ (conf, dbApp)
-
-  -- error "copy your prepareAppReqs from the previous level."
 
 -- | Some helper functions to make our lives a little more DRY.
 mkResponse :: Status -> ContentType -> LBS.ByteString -> Response
