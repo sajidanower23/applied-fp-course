@@ -44,7 +44,9 @@ import           FirstApp.Types                     (Conf (dbFilePath),
                                                      confPortToWai,
                                                      mkCommentText, mkTopic)
 
-import           FirstApp.AppM                      (AppM, Env (Env, envConfig, envDB, envLoggingFn))
+import           FirstApp.AppM                      (AppM, runAppM,
+                                                     Env (Env, envConfig, envDB,
+                                                     envLoggingFn))
 
 -- Our start-up is becoming more complicated and could fail in new and
 -- interesting ways. But we also want to be able to capture these errors in a
@@ -105,8 +107,29 @@ prepareAppReqs = do
 app
   :: Env
   -> Application
-app =
-  error "Copy your completed 'app' from the previous level and refactor it here"
+-- app =
+--   error "Copy your completed 'app' from the previous level and refactor it here"
+-- app
+--   :: Conf
+--   -> DB.FirstAppDB
+--   -> Application
+app env = do
+  rq' <- mkRequest rq
+  resp <- handleRespErr <$> handleRErr rq'
+  runAppM env resp
+  -- cb resp
+  where
+    handleRespErr :: Either Error Response -> Response
+    handleRespErr = either mkErrorResponse id
+
+    -- We want to pass the Database through to the handleRequest so it's
+    -- available to all of our handlers.
+    handleRErr :: Either Error RqType -> IO (Either Error Response)
+    handleRErr = either ( pure . Left ) ( handleRequest db )
+
+
+
+
 
 handleRequest
   :: RqType

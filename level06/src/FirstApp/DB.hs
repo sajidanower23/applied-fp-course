@@ -25,7 +25,7 @@ import qualified Database.SQLite.Simple             as Sql
 import qualified Database.SQLite.SimpleErrors       as Sql
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 
-import FirstApp.AppM (AppM, Env (envDB))
+import FirstApp.AppM (AppM(..), Env (..))
 
 import           FirstApp.Types                     (FirstAppDB (FirstAppDB, dbConn), Comment, CommentText,
                                                      DBFilePath (getDBFilePath),
@@ -58,30 +58,73 @@ initDB fp = Sql.runDBAction $ do
       "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, topic TEXT, comment TEXT, time INTEGER)"
 
 getDBConn :: AppM Connection
-getDBConn = error "getDBConn not implemented"
+getDBConn = asks (dbConn . envDB) 
 
-runDB :: (a -> Either Error b)
-      -> (Connection -> IO a)
-      -> AppM (Either Error b)
-runDB =
-  error "runDB not re-implemented"
+-- runDb :: (a -> Either Error b) -> IO a -> IO (Either Error b)
+-- runDb f a = do
+--   r <- Sql.runDBAction a
+--   pure $ either (Left . DBError) f r
+
+runDB :: (Connection -> IO a)
+      -> AppM (Either Error a)
+runDB dbAct = do
+  c <- getDBConn
+  r <- liftIO $ Sql.runDBAction $ dbAct c
+  pure $ first DBError r
+
+query :: (ToRow s, FromRow r) => Query -> s -> AppM (Either Error [r])
+query q args = runDB (\c -> Sql.query c q args)
+
+query_ :: FromRow r => Query -> AppM (Either Error [r])
+query_ q = runDB (\c -> Sql.query_ c q)
+
+execute :: ToRow s => Query -> s -> AppM (Either Error ())
+execute q args = runDB (\c -> Sql.execute c q args)
+
+execute_ :: Query -> AppM (Either Error ())
+execute_ q = runDB (\c -> Sql.execute_ c q)
 
 getComments :: Topic
             -> AppM (Either Error [Comment])
-getComments =
-  error "Copy your completed 'getComments' and refactor to match the new type signature"
+getComments t = do
+  -- m a -> (a -> m b) -> mb
+  -- Write the query with an icky string and remember your placeholders!
+  let q = "SELECT id,topic,comment,time FROM comments WHERE topic = ?"
+  results <- query q (Sql.Only $ getTopic t)
+  pure $ results >>= traverse fromDbComment
 
 addCommentToTopic :: Topic
                   -> CommentText
                   -> AppM (Either Error ())
-addCommentToTopic =
-  error "Copy your completed 'appCommentToTopic' and refactor to match the new type signature"
+addCommentToTopic t c = do
+  -- Record the time this comment was created.
+  -- nowish <- getCurrentTime
+  nowish <- liftIO $ getCurrentTime
+  -- Note the triple, matching the number of values we're trying to insert, plus
+  -- one for the table name.
+  let q =
+        -- Remember that the '?' are order dependent so if you get your input
+        -- parameters in the wrong order, the types won't save you here. More on that
+        -- sort of goodness later.
+        "INSERT INTO comments (topic,comment,time) VALUES (?,?,?)"
+  -- We use the execute function this time as we don't care about anything
+  -- that is returned. The execute function will still return the number of rows
+  -- affected by the query, which in our case should always be 1.
+  execute q (getTopic t, getCommentText c, nowish)
+  -- runDb Right $ Sql.execute (dbConn db) q (getTopic t, getCommentText c, nowish)
+  -- An alternative is to write a returning query to get the Id of the DbComment
+  -- we've created. We're being lazy (hah!) for now, so assume awesome and move on.
 
 getTopics :: AppM (Either Error [Topic])
 getTopics =
-  error "Copy your completed 'getTopics' and refactor to match the new type signature"
+  let q = "SELECT DISTINCT topic FROM comments"
+  in do
+    results <- query_ q
+    pure $ results >>= traverse (mkTopic . Sql.fromOnly)
 
 deleteTopic :: Topic
             -> AppM (Either Error ())
-deleteTopic =
-  error "Copy your completed 'deleteTopic' and refactor to match the new type signature"
+deleteTopic t =
+  let q = "DELETE FROM comments WHERE topic = ?"
+  in
+    execute q (Sql.Only $ getTopic t)
