@@ -58,7 +58,7 @@ initDB fp = Sql.runDBAction $ do
       "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, topic TEXT, comment TEXT, time INTEGER)"
 
 getDBConn :: AppM Connection
-getDBConn = asks (dbConn . envDB) 
+getDBConn = asks (dbConn . envDB)
 
 runDB :: (Connection -> IO a)
       -> AppM (Either Error a)
