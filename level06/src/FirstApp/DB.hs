@@ -60,11 +60,6 @@ initDB fp = Sql.runDBAction $ do
 getDBConn :: AppM Connection
 getDBConn = asks (dbConn . envDB) 
 
--- runDb :: (a -> Either Error b) -> IO a -> IO (Either Error b)
--- runDb f a = do
---   r <- Sql.runDBAction a
---   pure $ either (Left . DBError) f r
-
 runDB :: (Connection -> IO a)
       -> AppM (Either Error a)
 runDB dbAct = do

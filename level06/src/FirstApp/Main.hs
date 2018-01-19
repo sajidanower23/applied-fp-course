@@ -113,22 +113,17 @@ app
 --   :: Conf
 --   -> DB.FirstAppDB
 --   -> Application
-app env = do
-  rq' <- mkRequest rq
-  resp <- handleRespErr <$> handleRErr rq'
-  runAppM env resp
-  -- cb resp
+-- Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+app env rq cb = do
+  resp <- runAppM env $ mkRequest rq >>= handleRErr >>= handleRespErr
+  cb resp
   where
-    handleRespErr :: Either Error Response -> Response
-    handleRespErr = either mkErrorResponse id
-
+    handleRespErr :: Either Error Response -> AppM Response
+    handleRespErr = either mkErrorResponse pure
     -- We want to pass the Database through to the handleRequest so it's
     -- available to all of our handlers.
-    handleRErr :: Either Error RqType -> IO (Either Error Response)
-    handleRErr = either ( pure . Left ) ( handleRequest db )
-
-
-
+    handleRErr :: Either Error RqType -> AppM (Either Error Response)
+    handleRErr = either ( pure . Left ) handleRequest
 
 
 handleRequest

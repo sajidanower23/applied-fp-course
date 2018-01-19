@@ -93,6 +93,6 @@ parseJSONConfigFile fp = do
       Left e2 -> pure $ Left e2
       Right obj ->
         let p = fromJsonObjWithKey "port" Port obj
-            f = fromJsonObjWithKey "dbFileName" DBFilePath obj
+            f = fromJsonObjWithKey "dbName" DBFilePath obj
         in
           return $ Right $ PartialConf p f
