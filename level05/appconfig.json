@@ -1,3 +1,4 @@
 {
-  "dbFileName": "app_db.db"
+  "dbFileName": "app_db.db",
+  "port": 8000
 }

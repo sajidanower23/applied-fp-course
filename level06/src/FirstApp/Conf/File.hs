@@ -9,14 +9,15 @@ import           Data.Text                  (Text)
 import           Data.Bifunctor             (first)
 import           Data.Monoid                (Last (Last))
 
-import           Control.Exception          (try)
+import           Control.Exception          (try, IOException)
 
 import           Data.Aeson                 (FromJSON, Object)
-
+import           Data.Aeson.Types
 import qualified Data.Aeson                 as Aeson
 
-import           FirstApp.Types             (ConfigError,
-                                             PartialConf (PartialConf))
+import           FirstApp.Types             (ConfigError(..),
+                                             PartialConf (..),
+                                             Port(..), DBFilePath(..))
 -- Doctest setup section
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -41,14 +42,8 @@ import           FirstApp.Types             (ConfigError,
 -- >>> fromJsonObjWithKey "foo" id obj
 -- Last {getLast = Nothing}
 --
-fromJsonObjWithKey
-  :: FromJSON a
-  => Text
-  -> (a -> b)
-  -> Object
-  -> Last b
-fromJsonObjWithKey =
-  error "fromJsonObjWithKey not implemented"
+fromJsonObjWithKey :: FromJSON a => Text -> (a -> b) -> Object -> Last b
+fromJsonObjWithKey k f obj = Last $ f <$> parseMaybe (parseField obj) k
 
 -- |----
 -- | You will need to update these tests when you've completed the following functions!
@@ -57,38 +52,47 @@ fromJsonObjWithKey =
 
 -- | decodeObj
 -- >>> decodeObj ""
--- Left (undefined "Error in $: not enough input")
+-- Left (DecodeError "Error in $: not enough input")
 --
 -- >>> decodeObj "{\"bar\":33}"
 -- Right (fromList [("bar",Number 33.0)])
 --
-decodeObj
-  :: ByteString
-  -> Either ConfigError Object
-decodeObj =
-  error "decodeObj not implemented"
+decodeObj :: ByteString -> Either ConfigError Object
+decodeObj b = first (const DecodeError) (Aeson.eitherDecode b)
 
 -- | Update these tests when you've completed this function.
 --
 -- | readObject
 -- >>> readObject "badFileName.no"
--- Left (undefined badFileName.no: openBinaryFile: does not exist (No such file or directory))
+-- Left (NoFileError badFileName.no: openBinaryFile: does not exist (No such file or directory))
 --
 -- >>> readObject "test.json"
 -- Right "{\"foo\":33}\n"
 --
-readObject
-  :: FilePath
-  -> IO ( Either ConfigError ByteString )
-readObject =
-  error "readObject not implemented"
+readObject :: FilePath -> IO ( Either ConfigError ByteString )
+readObject fp = do
+  first (const MissingDBFilePath) <$> (try (LBS.readFile fp) :: IO (Either IOException ByteString))
+  -- (a -> c) -> Either a b -> 
+                        -- Exception e => IO a -> IO (Either e a)
+  -- try (LBS.readFile fp)
+  -- res <- try (LBS.readFile fp)
+  -- case res of
+  --   Left e -> pure $ Left NoFileError
+  --   Right b -> pure $ Right b
 
 -- Construct the function that will take a ``FilePath``, read it in and attempt
 -- to decode it as a valid JSON object, using the ``aeson`` package. Then pull
 -- specific keys off this object and construct our ``PartialConf``. Using the
 -- function we wrote above to assist in pulling items off the object.
-parseJSONConfigFile
-  :: FilePath
-  -> IO ( Either ConfigError PartialConf )
-parseJSONConfigFile =
-  error "parseJSONConfigFile not implemented"
+parseJSONConfigFile :: FilePath -> IO ( Either ConfigError PartialConf )
+parseJSONConfigFile fp = do
+  objStrE <- readObject fp
+  case objStrE of
+    Left e1 -> pure $ Left e1
+    Right objStr -> case decodeObj objStr of
+      Left e2 -> pure $ Left e2
+      Right obj ->
+        let p = fromJsonObjWithKey "port" Port obj
+            f = fromJsonObjWithKey "dbName" DBFilePath obj
+        in
+          return $ Right $ PartialConf p f

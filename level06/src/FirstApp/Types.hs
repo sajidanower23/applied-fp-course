@@ -39,7 +39,7 @@ import qualified Data.Aeson.Types                   as A
 
 import           Data.Time                          (UTCTime)
 
-import           Database.SQLite.Simple             (Connection)
+import           Database.SQLite.Simple             (Connection, FromRow(..))
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 
 import           FirstApp.DB.Types                  (DbComment (dbCommentComment, dbCommentId, dbCommentTime, dbCommentTopic))
@@ -204,8 +204,11 @@ confPortToWai =
 -- Similar to when we were considering our application types, leave this empty
 -- for now and add to it as you go.
 data ConfigError
-  = MissingPort
+  = NoFileError
   | MissingDBFilePath
+  | DecodeError
+  | MissingPort
+  | MissingFilePath
   deriving Show
 
 -- Our application will be able to load configuration from both a file and

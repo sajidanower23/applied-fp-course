@@ -77,9 +77,7 @@ handleRequest (ViewRq _) =
 handleRequest ListRq =
   Right $ resp200 PlainText "List Request not implemented"
 
-mkRequest
-  :: Request
-  -> IO ( Either Error RqType )
+mkRequest :: Request -> IO ( Either Error RqType )
 mkRequest rq =
   case ( pathInfo rq, requestMethod rq ) of
     -- Commenting on a given topic
@@ -95,28 +93,20 @@ mkRequest rq =
     _                      ->
       pure ( Left UnknownRoute )
 
-mkAddRequest
-  :: Text
-  -> LBS.ByteString
-  -> Either Error RqType
+mkAddRequest :: Text -> LBS.ByteString -> Either Error RqType
 mkAddRequest ti c = AddRq
   <$> mkTopic ti
   <*> (mkCommentText . decodeUtf8 . LBS.toStrict) c
 
-mkViewRequest
-  :: Text
-  -> Either Error RqType
+mkViewRequest :: Text -> Either Error RqType
 mkViewRequest =
   fmap ViewRq . mkTopic
 
-mkListRequest
-  :: Either Error RqType
+mkListRequest :: Either Error RqType
 mkListRequest =
   Right ListRq
 
-mkErrorResponse
-  :: Error
-  -> Response
+mkErrorResponse :: Error -> Response
 mkErrorResponse UnknownRoute =
   resp404 PlainText "Unknown Route"
 mkErrorResponse EmptyCommentText =

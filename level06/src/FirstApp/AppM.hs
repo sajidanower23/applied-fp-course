@@ -73,11 +73,8 @@ newtype AppM a = AppM
 -- We have an Env so that leaves us with the:
 -- > IO a
 -- and we're done.
-runAppM
-  :: Env
-  -> AppM a
-  -> IO a
-runAppM =
-  error "runAppM not implemented"
+runAppM :: Env -> AppM a -> IO a
+runAppM e aM = (runReaderT . unAppM) aM e
+-- runAppM e _ = unAppM e
 
 -- Move on to ``src/FirstApp/DB.hs`` after this

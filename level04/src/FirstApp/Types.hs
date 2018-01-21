@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ViewPatterns #-}
 module FirstApp.Types
   ( Error (..)
   , RqType (..)
@@ -15,8 +16,8 @@ module FirstApp.Types
   , renderContentType
   , fromDbComment
   ) where
-
-import           GHC.Generics      (Generic)
+import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
+import           GHC.Generics      (Generic)  
 
 import           Data.ByteString   (ByteString)
 import           Data.Text         (Text)
@@ -30,7 +31,9 @@ import qualified Data.Aeson.Types  as A
 
 import           Data.Time         (UTCTime)
 
-import           FirstApp.DB.Types (DBComment)
+import           FirstApp.DB.Types (DBComment(..))
+import           Data.List
+import           Data.Char
 
 newtype Topic = Topic Text
   deriving (Show, ToJSON)
@@ -66,11 +69,15 @@ data Comment = Comment
 -- "topic"
 -- >>> modFieldLabel ""
 -- ""
-modFieldLabel
-  :: String
-  -> String
-modFieldLabel =
-  error "modFieldLabel not implemented"
+modFieldLabel :: String -> String
+modFieldLabel s =
+  case labelMaybe of
+    Nothing      -> s
+    Just (x:xs)  -> (toLower x : xs)
+    Just []      -> []
+  where
+    pref = takeWhile isLower s
+    labelMaybe = stripPrefix pref s
 
 instance ToJSON Comment where
   -- This is one place where we can take advantage of our `Generic` instance.
@@ -92,43 +99,32 @@ instance ToJSON Comment where
 -- that we would be okay with showing someone. However unlikely it may be, this
 -- is a nice method for separating out the back and front end of a web app and
 -- providing greater guarantees about data cleanliness.
-fromDbComment
-  :: DBComment
-  -> Either Error Comment
-fromDbComment =
-  error "fromDbComment not yet implemented"
+fromDbComment :: DBComment -> Either Error Comment
+fromDbComment (DBComment cId cTopic cBody cTime) =
+  Comment
+  <$> (pure $ CommentId cId)
+  <*> mkTopic cTopic
+  <*> mkCommentText cBody
+  <*> (pure cTime)
 
-nonEmptyText
-  :: (Text -> a)
-  -> Error
-  -> Text
-  -> Either Error a
+  -- error "fromDbComment not yet implemented"
+
+nonEmptyText :: (Text -> a) -> Error -> Text -> Either Error a
 nonEmptyText _ e "" = Left e
 nonEmptyText c _ tx = Right (c tx)
 
-mkTopic
-  :: Text
-  -> Either Error Topic
+mkTopic :: Text -> Either Error Topic
 mkTopic =
   nonEmptyText Topic EmptyTopic
 
-getTopic
-  :: Topic
-  -> Text
-getTopic (Topic t) =
-  t
+getTopic :: Topic -> Text
+getTopic (Topic t) = t
 
-mkCommentText
-  :: Text
-  -> Either Error CommentText
-mkCommentText =
-  nonEmptyText CommentText EmptyCommentText
+mkCommentText :: Text -> Either Error CommentText
+mkCommentText = nonEmptyText CommentText EmptyCommentText
 
-getCommentText
-  :: CommentText
-  -> Text
-getCommentText (CommentText t) =
-  t
+getCommentText :: CommentText -> Text
+getCommentText (CommentText t) = t
 
 data RqType
   = AddRq Topic CommentText
@@ -139,6 +135,7 @@ data Error
   = UnknownRoute
   | EmptyCommentText
   | EmptyTopic
+  | DBError
   -- We need another constructor for our DB error types.
   deriving Show
 
@@ -146,8 +143,6 @@ data ContentType
   = PlainText
   | JSON
 
-renderContentType
-  :: ContentType
-  -> ByteString
+renderContentType :: ContentType -> ByteString
 renderContentType PlainText = "text/plain"
 renderContentType JSON      = "application/json"
