@@ -112,12 +112,8 @@ newtype AppM a = AppM
 -- you're running monad transformers you have to unpack them in order. Since our outer
 -- transformer is a ReaderT, we have to run that first. Followed by running
 -- the ExceptT to retrieve our `IO (Either Error a)`.
-runAppM
-  :: Env
-  -> AppM a
-  -> IO (Either Error a)
-runAppM =
-  error "runAppM not reimplemented"
+runAppM :: Env -> AppM a -> IO (Either Error a)
+runAppM env aM = (runReaderT . unAppM) aM env
 
 -- This is a helper function that will `lift` an Either value into our new AppM
 -- by applying `throwError` to the Left value, and using `pure` to lift the
@@ -126,8 +122,6 @@ runAppM =
 -- throwError :: MonadError e m => e -> m a
 -- pure :: Applicative m => a -> m a
 --
-throwL
-  :: Either Error a
-  -> AppM a
+throwL :: Either Error a -> AppM a
 throwL =
   error "throwL not implemented"
