@@ -116,10 +116,7 @@ resp200Json =
 -- |
 
 -- Now that we have our configuration, pass it where it needs to go.
-app
-  :: Conf
-  -> DB.FirstAppDB
-  -> Application
+app :: Conf -> DB.FirstAppDB -> Application
 app cfg db rq cb = do
   rq' <- mkRequest rq
   resp <- handleRespErr <$> handleRErr rq'
@@ -140,28 +137,13 @@ handleRequest
   -> RqType
   -> IO ( Either Error Response )
 handleRequest db rqType =
-  -- Now that we're operating within the context of our AppM, which is a
-  -- ReaderT, we're able to access the values stored in the Env.
-  --
-  -- Two functions that allow us to access the data stored in our ReaderT are:
-  -- ask :: MonadReader r m => m r
-  -- &
-  -- asks :: MonadReader r m => (r -> a) -> m a
-  --
-  -- We will use ``asks`` here as we only want the FirstAppDB, so...
-  -- > envDb      :: Env -> FirstAppDB
-  -- > AppM       :: ReaderT Env IO a
-  -- > asks       :: (Env -> a) -> AppM a
-  -- > asks envDb :: AppM FirstAppDB
   case rqType of
     -- Exercise for later: Could this be generalised to clean up the repetition ?
     AddRq t c -> (resp200 PlainText "Success" <$) <$> DB.addCommentToTopic db t c
     ViewRq t  -> fmap resp200Json <$> DB.getComments db t
     ListRq    -> fmap resp200Json <$> DB.getTopics db
 
-mkRequest
-  :: Request
-  -> IO ( Either Error RqType )
+mkRequest :: Request -> IO ( Either Error RqType )
 mkRequest rq =
   case ( pathInfo rq, requestMethod rq ) of
     -- Commenting on a given topic
@@ -173,28 +155,20 @@ mkRequest rq =
     -- Finally we don't care about any other requests so build an Error response
     _                      -> pure ( Left UnknownRoute )
 
-mkAddRequest
-  :: Text
-  -> LBS.ByteString
-  -> Either Error RqType
+mkAddRequest :: Text -> LBS.ByteString -> Either Error RqType
 mkAddRequest ti c = AddRq
   <$> mkTopic ti
   <*> (mkCommentText . decodeUtf8 . LBS.toStrict) c
 
-mkViewRequest
-  :: Text
-  -> Either Error RqType
+mkViewRequest :: Text -> Either Error RqType
 mkViewRequest =
   fmap ViewRq . mkTopic
 
-mkListRequest
-  :: Either Error RqType
+mkListRequest :: Either Error RqType
 mkListRequest =
   Right ListRq
 
-mkErrorResponse
-  :: Error
-  -> Response
+mkErrorResponse :: Error -> Response
 mkErrorResponse UnknownRoute =
   resp404 PlainText "Unknown Route"
 mkErrorResponse EmptyCommentText =

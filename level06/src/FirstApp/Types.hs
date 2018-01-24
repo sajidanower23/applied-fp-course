@@ -195,9 +195,7 @@ data Conf = Conf
 -- values from being used in our application. However Wai is not so stringent.
 -- To accommodate this and make our lives a bit easier, we will write this
 -- helper function to take ``Conf`` value and convert it to an ``Int``.
-confPortToWai
-  :: Conf
-  -> Int
+confPortToWai :: Conf -> Int
 confPortToWai =
   fromIntegral . getPort . port
 
