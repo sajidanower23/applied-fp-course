@@ -34,7 +34,7 @@ import           FirstApp.Types                     (Comment, CommentText,
                                                      Topic, fromDbComment,
                                                      getCommentText, getTopic,
                                                      mkTopic)
-
+-- import           Data.Either                        (fromRight)
 import           FirstApp.AppM                      (AppM, envDB, throwL)
 
 -- Quick helper to pull the connection and close it down.
@@ -66,18 +66,38 @@ getDBConn
 getDBConn =
   asks (dbConn . envDB)
 
-runDB
-  :: (a -> Either Error b)
-  -> (Connection -> IO a)
-  -> AppM b
-runDB =
-  error "Copy your completed 'runDB' and refactor to match the new type signature"
+runDB :: (a -> Either Error b) -> (Connection -> IO a) -> AppM b
+runDB f dbAct = do
+  c <- getDBConn
+  r <- liftIO $ Sql.runDBAction $ dbAct c
+  -- r = Either SQLiteResponse a
+  either (throwL . Left . DBError) (throwL . f) r
 
-getComments
-  :: Topic
-  -> AppM [Comment]
-getComments =
-  error "Copy your completed 'getComments' and refactor to match the new type signature"
+
+query :: (ToRow s, FromRow r) => Query -> s -> AppM (Either Error [r])
+query q args = runDB try (\c -> Sql.query c q args)
+
+query_ :: FromRow r => Query -> AppM (Either Error [r])
+query_ q = runDB (\c -> Sql.query_ c q)
+
+execute :: ToRow s => Query -> s -> AppM (Either Error ())
+execute q args = runDB (\c -> Sql.execute c q args)
+
+execute_ :: Query -> AppM (Either Error ())
+execute_ q = runDB (\c -> Sql.execute_ c q)
+
+getComments :: Topic -> AppM [Comment]
+getComments t = do
+  -- m a -> (a -> m b) -> mb
+  -- Write the query with an icky string and remember your placeholders!
+  let q = "SELECT id,topic,comment,time FROM comments WHERE topic = ?"
+  results <- query q (Sql.Only $ getTopic t)
+  pure $ results >>= traverse fromDbComment
+
+-- getComments :: Topic
+--             -> AppM (Either Error [Comment])
+-- getComments t = do
+
 
 addCommentToTopic
   :: Topic

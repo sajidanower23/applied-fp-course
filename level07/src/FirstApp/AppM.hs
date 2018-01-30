@@ -113,7 +113,7 @@ newtype AppM a = AppM
 -- transformer is a ReaderT, we have to run that first. Followed by running
 -- the ExceptT to retrieve our `IO (Either Error a)`.
 runAppM :: Env -> AppM a -> IO (Either Error a)
-runAppM env aM = (runReaderT . unAppM) aM env
+runAppM env aM = runExceptT $ (runReaderT . unAppM) aM env
 
 -- This is a helper function that will `lift` an Either value into our new AppM
 -- by applying `throwError` to the Left value, and using `pure` to lift the
@@ -123,5 +123,4 @@ runAppM env aM = (runReaderT . unAppM) aM env
 -- pure :: Applicative m => a -> m a
 --
 throwL :: Either Error a -> AppM a
-throwL =
-  error "throwL not implemented"
+throwL = either throwError pure
